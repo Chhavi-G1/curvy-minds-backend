@@ -36,7 +36,7 @@ db.connect((err) => {
 
 
 // ===============================
-// RESEND EMAIL
+// RESEND
 // ===============================
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -71,13 +71,9 @@ app.post("/api/register", async (req, res) => {
   }
 
   try {
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create verification token
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Save user
     db.query(
       `INSERT INTO users
       (email, password, verified, verification_token)
@@ -92,8 +88,6 @@ app.post("/api/register", async (req, res) => {
           });
         }
 
-        // IMPORTANT:
-        // Replace this with your actual deployed backend URL
         const verifyUrl =
           `${process.env.BACKEND_URL}/api/verify/${token}`;
 
@@ -134,18 +128,19 @@ app.post("/api/register", async (req, res) => {
 
                 <p>${verifyUrl}</p>
 
-                <p>
-                  — Curvy Minds
-                </p>
+                <p>— Curvy Minds</p>
               </div>
             `,
           });
 
           if (error) {
-            console.error("Resend error:", error);
+            console.error("========== RESEND ERROR ==========");
+            console.error(error);
+            console.error("==================================");
 
             return res.status(500).json({
-              error: "Account created, but verification email could not be sent.",
+              error:
+                "Account created, but verification email could not be sent.",
             });
           }
 
@@ -157,10 +152,7 @@ app.post("/api/register", async (req, res) => {
           });
 
         } catch (mailErr) {
-          console.error(
-            "Email sending failed:",
-            mailErr.message
-          );
+          console.error("Email sending failed:", mailErr.message);
 
           return res.status(500).json({
             error:
@@ -188,9 +180,7 @@ app.get("/api/verify/:token", (req, res) => {
   const { token } = req.params;
 
   db.query(
-    `UPDATE users
-     SET verified = 1,
-     WHERE verification_token = ?`,
+    "UPDATE users SET verified = 1 WHERE verification_token = ?",
     [token],
     (err, result) => {
       if (err) {
@@ -248,7 +238,6 @@ app.post("/api/login", (req, res) => {
     "SELECT * FROM users WHERE email = ?",
     [email],
     async (err, results) => {
-
       if (err) {
         return res.status(500).json({
           error: err.message,
