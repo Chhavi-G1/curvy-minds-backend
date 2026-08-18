@@ -190,7 +190,6 @@ app.get("/api/verify/:token", (req, res) => {
   db.query(
     `UPDATE users
      SET verified = 1,
-         verification_token = NULL
      WHERE verification_token = ?`,
     [token],
     (err, result) => {
