@@ -228,61 +228,57 @@ app.get("/api/verify/:token", (req, res) => {
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({
-      error: "Email and password required",
-    });
-  }
+  console.log("LOGIN ATTEMPT");
+  console.log("Email received:", email);
 
   db.query(
     "SELECT * FROM users WHERE email = ?",
     [email],
     async (err, results) => {
+
       if (err) {
-        return res.status(500).json({
-          error: err.message,
-        });
+        console.error("LOGIN DB ERROR:", err.message);
+        return res.status(500).json({ error: err.message });
       }
 
+      console.log("Users found:", results.length);
+
       if (results.length === 0) {
+        console.log("NO USER FOUND");
         return res.status(401).json({
-          error: "Invalid email or password",
+          error: "Invalid email or password"
         });
       }
 
       const user = results[0];
 
-      try {
-        const match = await bcrypt.compare(
-          password,
-          user.password
-        );
+      console.log("User found. Verified:", user.verified);
+      console.log("Password hash exists:", !!user.password);
 
-        if (!match) {
-          return res.status(401).json({
-            error: "Invalid email or password",
-          });
-        }
+      const match = await bcrypt.compare(password, user.password);
 
-        if (!user.verified) {
-          return res.status(403).json({
-            error:
-              "Please verify your email before logging in.",
-          });
-        }
+      console.log("Password matches:", match);
 
-        res.json({
-          id: user.id,
-          email: user.email,
-        });
-
-      } catch (error) {
-        console.error("Login error:", error);
-
-        res.status(500).json({
-          error: "Something went wrong during login.",
+      if (!match) {
+        console.log("PASSWORD DOES NOT MATCH");
+        return res.status(401).json({
+          error: "Invalid email or password"
         });
       }
+
+      if (!user.verified) {
+        console.log("EMAIL NOT VERIFIED");
+        return res.status(403).json({
+          error: "Please verify your email before logging in."
+        });
+      }
+
+      console.log("LOGIN SUCCESS");
+
+      res.json({
+        id: user.id,
+        email: user.email
+      });
     }
   );
 });
